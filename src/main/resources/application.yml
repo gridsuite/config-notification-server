@@ -19,4 +19,4 @@ logging:
     org.gridsuite.config.notification.server.NotificationWebSocketHandler: DEBUG
 
 server:
-  port: 5010
+  port: 5024
