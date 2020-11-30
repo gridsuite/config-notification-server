@@ -6,6 +6,7 @@
  */
 package org.gridsuite.config.notification.server;
 
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -92,7 +93,7 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
                                 HEADER_USER_ID, m.getHeaders().get(HEADER_USER_ID)));
                 return jacksonObjectMapper.writeValueAsString(submap);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }).log(CATEGORY_WS_OUTPUT, Level.FINE).map(webSocketSession::textMessage);
     }
