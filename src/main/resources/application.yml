@@ -16,7 +16,7 @@ spring:
 
 logging:
   level:
-    org.gridsuite.config.notification.server.NotificationWebSocketHandler: DEBUG
+    org.gridsuite.config.notification.server.NotificationWebSocketHandler: INFO
 
 server:
   port: 5024

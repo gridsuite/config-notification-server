@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -37,7 +38,9 @@ public class NotificationWebSocketIT {
     public void echo() {
         WebSocketClient client = new StandardWebSocketClient();
         assertNotNull(client);
-        client.execute(getUrl("/notify"), WebSocketSession::close).block();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("userId", "userId");
+        client.execute(getUrl("/notify"), headers, WebSocketSession::close).block();
     }
 
     protected URI getUrl(String path) {
