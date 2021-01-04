@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: config-notification-server
+
+  rabbitmq:
+    addresses: localhost
+    port: 5672
+
+  cloud:
+    function:
+      definition: consumeNotification
+    stream:
+      bindings:
+        consumeNotification-in-0:
+          destination: config.update
+
+logging:
+  level:
+    org.gridsuite.config.notification.server.NotificationWebSocketHandler: INFO
+
+server:
+  port: 5024
