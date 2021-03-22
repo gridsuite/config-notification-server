@@ -15,6 +15,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,9 +28,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
@@ -50,6 +50,7 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
     private static final String CATEGORY_BROKER_INPUT = NotificationWebSocketHandler.class.getName() + ".messages.input-broker";
     private static final String CATEGORY_WS_OUTPUT = NotificationWebSocketHandler.class.getName() + ".messages.output-websocket";
     private static final String HEADER_USER_ID = "userId";
+    private static final String HEADER_PARAMETERS_NAMES = "parametersNames";
 
     private ObjectMapper jacksonObjectMapper;
 
@@ -90,7 +91,8 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
                 Map<String, Object> submap = Map.of(
                         "payload", m.getPayload(),
                         "headers", Map.of(
-                                HEADER_USER_ID, m.getHeaders().get(HEADER_USER_ID)));
+                                HEADER_USER_ID, m.getHeaders().get(HEADER_USER_ID),
+                                HEADER_PARAMETERS_NAMES, m.getHeaders().get(HEADER_PARAMETERS_NAMES)));
                 return jacksonObjectMapper.writeValueAsString(submap);
             } catch (JsonProcessingException e) {
                 throw new UncheckedIOException(e);
@@ -124,7 +126,7 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
         return webSocketSession
                 .send(
                         notificationFlux(webSocketSession, filterUserId)
-                        .mergeWith(heartbeatFlux(webSocketSession)))
+                                .mergeWith(heartbeatFlux(webSocketSession)))
                 .and(webSocketSession.receive());
     }
 }
