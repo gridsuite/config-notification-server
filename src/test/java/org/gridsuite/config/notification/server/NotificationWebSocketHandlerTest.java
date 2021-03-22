@@ -6,20 +6,14 @@
  */
 package org.gridsuite.config.notification.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.springframework.http.HttpHeaders;
-
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,20 +21,23 @@ import org.mockito.Mockito;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.web.reactive.socket.HandshakeInfo;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+
+import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -76,22 +73,21 @@ public class NotificationWebSocketHandlerTest {
 
     }
 
-    private void withFilters(String filterUserId) {
+    private void withFilters(String filterUserId, String filterAppName) {
         var notificationWebSocketHandler = new NotificationWebSocketHandler(objectMapper, Integer.MAX_VALUE);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/notify");
 
-        uriComponentBuilder.queryParam("userId", filterUserId);
+        if (filterAppName != null) {
+            uriComponentBuilder.queryParam(QUERY_APP_NAME, filterAppName);
+        }
         when(handshakeinfo.getUri()).thenReturn(uriComponentBuilder.build().toUri());
 
+        HttpHeaders httpHeaders = new HttpHeaders();
         if (filterUserId != null) {
-            ArrayList<String> values = new ArrayList<>();
-            values.add("userId");
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.put("userId", values);
+            httpHeaders.add(HEADER_USER_ID, filterUserId);
             when(handshakeinfo.getHeaders()).thenReturn(httpHeaders);
         } else {
-            HttpHeaders httpHeaders = new HttpHeaders();
             when(handshakeinfo.getHeaders()).thenReturn(httpHeaders);
         }
 
@@ -103,46 +99,88 @@ public class NotificationWebSocketHandlerTest {
         notificationWebSocketHandler.handle(ws);
 
         List<Map<String, Object>> refMessages = Arrays.asList(
-                Map.of("userId", "userId1"),
-                Map.of("userId", "userId2"),
-                Map.of("userId", "userId3"),
-                Map.of("userId", "userId4"),
-                Map.of("userId", "userId5"),
-                Map.of("userId", "userId6"),
-                Map.of("userId", "userId7"),
-                Map.of("userId", "userId8"),
-                Map.of("userId", "userId9"),
-                Map.of("foo bar/bar", "foo bar/bar")
+
+                Map.of(HEADER_USER_ID, "userId"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, ""),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app1"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app2"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, COMMON_APP_NAME),
+
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "", HEADER_PARAMETER_NAME, ""),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app1", HEADER_PARAMETER_NAME, ""),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app2", HEADER_PARAMETER_NAME, ""),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, COMMON_APP_NAME, HEADER_PARAMETER_NAME, ""),
+
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app1", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "app2", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, COMMON_APP_NAME, HEADER_PARAMETER_NAME, "param"),
+
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "appName", HEADER_PARAMETER_NAME, "param1"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "appName", HEADER_PARAMETER_NAME, "param2"),
+                Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, COMMON_APP_NAME, HEADER_PARAMETER_NAME, "param3"),
+
+                Map.of(HEADER_USER_ID, "userId2", HEADER_APP_NAME, "", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId2", HEADER_APP_NAME, "app1", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId2", HEADER_APP_NAME, "app2", HEADER_PARAMETER_NAME, "param"),
+                Map.of(HEADER_USER_ID, "userId2", HEADER_APP_NAME, COMMON_APP_NAME, HEADER_PARAMETER_NAME, "param"),
+
+                Map.of(HEADER_USER_ID, "foo bar/bar", HEADER_APP_NAME, "appName"),      // test encoding user name
+
+                Map.of("foo bar/bar", "foo bar/bar", HEADER_APP_NAME, "appName")    // bad header for user id (message discarded)
         );
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Flux<WebSocketMessage>> argument = ArgumentCaptor.forClass(Flux.class);
         verify(ws).send(argument.capture());
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         argument.getValue().map(WebSocketMessage::getPayloadAsText).subscribe(messages::add);
-        refMessages.stream().map(headers -> new GenericMessage<String>("", headers)).forEach(sink::next);
+        refMessages.stream().map(headers -> new GenericMessage<>("", headers)).forEach(sink::next);
         sink.complete();
 
-        List<Map<String, Object>> expected = refMessages.stream().filter(headers -> {
-            String userId = (String) headers.get("userId");
-            return filterUserId == null || filterUserId.equals(userId);
-        }).collect(Collectors.toList());
-        List<Map<String, Object>> actual = messages.stream().map(t -> {
-            try {
-                var deserializedHeaders = ((Map<String, Map<String, Object>>) objectMapper.readValue(t, Map.class))
-                        .get("headers");
-                return Map.of("userId", deserializedHeaders.get("userId"));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        }).collect(Collectors.toList());
+        List<Map<String, Object>> expected = refMessages.stream()
+                .filter(headers -> {
+                    String userId = (String) headers.get(HEADER_USER_ID);
+                    String appName = (String) headers.get(HEADER_APP_NAME);
+                    return filterUserId.equals(userId) && (filterAppName == null || COMMON_APP_NAME.equals(appName) || filterAppName.equals(appName));
+                })
+                .map(this::toResultHeader)
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> actual = messages.stream()
+                .map(t -> {
+                    try {
+                        return toResultHeader(((Map<String, Map<String, Object>>) objectMapper.readValue(t, Map.class)).get("headers"));
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
         assertEquals(expected, actual);
     }
 
+    private Map<String, Object> toResultHeader(Map<String, Object> messageHeader) {
+        var resHeader = new HashMap<String, Object>();
+        if (messageHeader.get(HEADER_APP_NAME) != null) {
+            resHeader.put(HEADER_APP_NAME, messageHeader.get(HEADER_APP_NAME));
+        }
+        if (messageHeader.get(HEADER_PARAMETER_NAME) != null) {
+            resHeader.put(HEADER_PARAMETER_NAME, messageHeader.get(HEADER_PARAMETER_NAME));
+        }
+        return resHeader;
+    }
+
     @Test
-    public void testWithoutFilter() {
+    public void testWithoutUserIdFilter() {
         try {
-            withFilters(null);
+            withFilters(null, null);
+        } catch (NotificationServerRuntimeException e) {
+            if (!e.getMessage().equals(NotificationServerRuntimeException.NOT_ALLOWED)) {
+                fail();
+            }
+        }
+        try {
+            withFilters(null, "appName");
         } catch (NotificationServerRuntimeException e) {
             if (!e.getMessage().equals(NotificationServerRuntimeException.NOT_ALLOWED)) {
                 fail();
@@ -152,12 +190,17 @@ public class NotificationWebSocketHandlerTest {
 
     @Test
     public void testUserIdFilter() {
-        withFilters("userId");
+        withFilters("userId", null);
+    }
+
+    @Test
+    public void testAppNameFilter() {
+        withFilters("userId", "appName");
     }
 
     @Test
     public void testEncodingCharacters() {
-        withFilters("foo bar/bar");
+        withFilters("foo bar/bar", "appName");
     }
 
     @Test
@@ -190,38 +233,36 @@ public class NotificationWebSocketHandlerTest {
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/notify");
 
         when(handshakeinfo.getUri()).thenReturn(uriComponentBuilder.build().toUri());
-        ArrayList<String> values = new ArrayList<>();
-        values.add("userId");
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.put("userId", values);
+        httpHeaders.add(HEADER_USER_ID, "userId1");
         when(handshakeinfo.getHeaders()).thenReturn(httpHeaders);
 
         var atomicRef = new AtomicReference<FluxSink<Message<String>>>();
         var flux = Flux.create(atomicRef::set);
         notificationWebSocketHandler.consumeNotification().accept(flux);
         var sink = atomicRef.get();
-        Map<String, Object> headers = Map.of("userId", "foo");
+        Map<String, Object> headers = Map.of(HEADER_USER_ID, "userId", HEADER_APP_NAME, "appName");
 
-        sink.next(new GenericMessage<String>("", headers)); // should be discarded, no client connected
+        sink.next(new GenericMessage<>("", headers)); // should be discarded, no client connected
 
         notificationWebSocketHandler.handle(ws);
 
         ArgumentCaptor<Flux<WebSocketMessage>> argument1 = ArgumentCaptor.forClass(Flux.class);
         verify(ws).send(argument1.capture());
-        List<String> messages1 = new ArrayList<String>();
+        List<String> messages1 = new ArrayList<>();
         Flux<WebSocketMessage> out1 = argument1.getValue();
         Disposable d1 = out1.map(WebSocketMessage::getPayloadAsText).subscribe(messages1::add);
         d1.dispose();
 
-        sink.next(new GenericMessage<String>("", headers)); // should be discarded, first client disconnected
+        sink.next(new GenericMessage<>("", headers)); // should be discarded, first client disconnected
 
         notificationWebSocketHandler.handle(ws);
 
         ArgumentCaptor<Flux<WebSocketMessage>> argument2 = ArgumentCaptor.forClass(Flux.class);
         verify(ws, times(2)).send(argument2.capture());
-        List<String> messages2 = new ArrayList<String>();
+        List<String> messages2 = new ArrayList<>();
         Flux<WebSocketMessage> out2 = argument2.getValue();
-        Disposable d2 = out1.map(WebSocketMessage::getPayloadAsText).subscribe(messages1::add);
+        Disposable d2 = out2.map(WebSocketMessage::getPayloadAsText).subscribe(messages2::add);
         d2.dispose();
 
         sink.complete();
