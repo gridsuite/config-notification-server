@@ -8,13 +8,18 @@ package org.gridsuite.config.notification.server;
 
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,13 +27,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -49,7 +52,11 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationWebSocketHandler.class);
     private static final String CATEGORY_BROKER_INPUT = NotificationWebSocketHandler.class.getName() + ".messages.input-broker";
     private static final String CATEGORY_WS_OUTPUT = NotificationWebSocketHandler.class.getName() + ".messages.output-websocket";
-    private static final String HEADER_USER_ID = "userId";
+    public static final String HEADER_USER_ID = "userId";
+    public static final String HEADER_APP_NAME = "appName";
+    public static final String QUERY_APP_NAME = "appName";
+    public static final String HEADER_PARAMETER_NAME = "parameterName";
+    public static final String COMMON_APP_NAME = "common";
 
     private ObjectMapper jacksonObjectMapper;
 
@@ -78,20 +85,25 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
     /**
      * map from the broker flux to the filtered flux for one websocket client, extracting only relevant fields.
      */
-    private Flux<WebSocketMessage> notificationFlux(WebSocketSession webSocketSession, String filterUserId) {
+    private Flux<WebSocketMessage> notificationFlux(WebSocketSession webSocketSession, String filterUserId, String filterAppName) {
         return flux.transform(f -> {
             Flux<Message<String>> res = f;
-            if (filterUserId != null) {
-                res = res.filter(m -> filterUserId.equals(m.getHeaders().get(HEADER_USER_ID)));
-            }
+            res = res
+                    .filter(m -> filterUserId.equals(m.getHeaders().get(HEADER_USER_ID)))
+                    .filter(m -> filterAppName == null ||
+                            filterAppName.equals(m.getHeaders().get(HEADER_APP_NAME)) ||
+                            COMMON_APP_NAME.equals(m.getHeaders().get(HEADER_APP_NAME)));
             return res;
         }).map(m -> {
             try {
-                Map<String, Object> submap = Map.of(
-                        "payload", m.getPayload(),
-                        "headers", Map.of(
-                                HEADER_USER_ID, m.getHeaders().get(HEADER_USER_ID)));
-                return jacksonObjectMapper.writeValueAsString(submap);
+                Map<String, Object> headers = new HashMap<>();
+                if (m.getHeaders().get(HEADER_APP_NAME) != null) {
+                    headers.put(HEADER_APP_NAME, m.getHeaders().get(HEADER_APP_NAME));
+                }
+                if (m.getHeaders().get(HEADER_PARAMETER_NAME) != null) {
+                    headers.put(HEADER_PARAMETER_NAME, m.getHeaders().get(HEADER_PARAMETER_NAME));
+                }
+                return jacksonObjectMapper.writeValueAsString(Map.of("payload", m.getPayload(), "headers", headers));
             } catch (JsonProcessingException e) {
                 throw new UncheckedIOException(e);
             }
@@ -108,10 +120,13 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession webSocketSession) {
+        URI uri = webSocketSession.getHandshakeInfo().getUri();
         HttpHeaders headers = webSocketSession.getHandshakeInfo().getHeaders();
+        MultiValueMap<String, String> parameters = UriComponentsBuilder.fromUri(uri).build(true).getQueryParams();
         String filterUserId = headers.getFirst(HEADER_USER_ID);
+        String filterAppName = parameters.getFirst(QUERY_APP_NAME);
 
-        if (filterUserId == null) {
+        if (Strings.isBlank(filterUserId)) {
             throw new NotificationServerRuntimeException(NotificationServerRuntimeException.NOT_ALLOWED);
         } else {
             try {
@@ -120,11 +135,11 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
                 throw new NotificationServerRuntimeException(e.getMessage());
             }
         }
-        LOGGER.debug("New websocket connection for userId={}", filterUserId);
+        LOGGER.debug("New websocket connection for {}={} and {}={}", HEADER_USER_ID, filterUserId, QUERY_APP_NAME, filterAppName);
         return webSocketSession
                 .send(
-                        notificationFlux(webSocketSession, filterUserId)
-                        .mergeWith(heartbeatFlux(webSocketSession)))
+                        notificationFlux(webSocketSession, filterUserId, filterAppName)
+                                .mergeWith(heartbeatFlux(webSocketSession)))
                 .and(webSocketSession.receive());
     }
 }
