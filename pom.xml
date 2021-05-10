@@ -15,7 +15,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>4</version>
+        <version>5-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
@@ -45,7 +45,7 @@
 
     <properties>
         <java.version>11</java.version>
-
+        
         <gridsuite-dependencies.version>7</gridsuite-dependencies.version>
     </properties>
 
@@ -114,6 +114,11 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
