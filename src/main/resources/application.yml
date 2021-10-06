@@ -2,8 +2,11 @@ spring:
   application:
     name: config-notification-server
 
+  profiles:
+    active: default,local
+
   rabbitmq:
-    addresses: localhost
+    addresses: rabbitmq
     port: 5672
 
   cloud:
@@ -17,6 +20,3 @@ spring:
 logging:
   level:
     org.gridsuite.config.notification.server.NotificationWebSocketHandler: INFO
-
-server:
-  port: 5024
