@@ -2,13 +2,6 @@ spring:
   application:
     name: config-notification-server
 
-  profiles:
-    active: default,local
-
-  rabbitmq:
-    addresses: rabbitmq
-    port: 5672
-
   cloud:
     function:
       definition: consumeNotification
