@@ -8,7 +8,7 @@ spring:
     stream:
       bindings:
         consumeNotification-in-0:
-          destination: config.update
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}config.update
 
 logging:
   level:
