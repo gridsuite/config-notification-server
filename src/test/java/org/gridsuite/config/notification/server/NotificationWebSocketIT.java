@@ -43,6 +43,15 @@ public class NotificationWebSocketIT {
         client.execute(getUrl("/notify"), headers, WebSocketSession::close).block();
     }
 
+    @Test
+    public void echo2() {
+        WebSocketClient client = new StandardWebSocketClient();
+        assertNotNull(client);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("userId", "userId");
+        client.execute(getUrl("/global"), headers, WebSocketSession::close).block();
+    }
+
     protected URI getUrl(String path) {
         return URI.create("ws://localhost:" + this.port + path);
     }
