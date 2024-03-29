@@ -4,12 +4,14 @@ spring:
 
   cloud:
     function:
-      definition: consumeNotification
+      definition: "consumeNotification;consumeMessage"
     stream:
       bindings:
         consumeNotification-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}config.update
-
+        consumeMessage-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}config.message
 logging:
   level:
     org.gridsuite.config.notification.server.NotificationWebSocketHandler: INFO
+    org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler: INFO
