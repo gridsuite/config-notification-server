@@ -6,16 +6,10 @@
  */
 package org.gridsuite.config.notification.server;
 
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -33,24 +27,31 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.HEADER_DURATION;
 import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.HEADER_MESSAGE_TYPE;
-import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.*;
-import static org.junit.Assert.assertEquals;
+import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_APP_NAME;
+import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_USER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-public class GlobalNotificationWebSocketHandlerTest {
+class GlobalNotificationWebSocketHandlerTest {
 
     private ObjectMapper objectMapper;
     private WebSocketSession ws;
     private HandshakeInfo handshakeinfo;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         objectMapper = new ObjectMapper();
         var dataBufferFactory = new DefaultDataBufferFactory();
 
@@ -75,7 +76,7 @@ public class GlobalNotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void test() {
+    void test() {
         var notificationWebSocketHandler = new GlobalNotificationWebSocketHandler(objectMapper, Integer.MAX_VALUE);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/global");
@@ -110,7 +111,7 @@ public class GlobalNotificationWebSocketHandlerTest {
         refMessages.stream().map(headers -> new GenericMessage<>("", headers)).forEach(sink::next);
         sink.complete();
 
-        List<Map<String, Object>> expected = refMessages.stream().map(this::toResultHeader)
+        List<Map<String, Object>> expected = refMessages.stream().map(GlobalNotificationWebSocketHandlerTest::toResultHeader)
                 .collect(Collectors.toList());
 
         List<Map<String, Object>> actual = messages.stream()
@@ -125,7 +126,7 @@ public class GlobalNotificationWebSocketHandlerTest {
         assertEquals(expected, actual);
     }
 
-    private Map<String, Object> toResultHeader(Map<String, Object> messageHeader) {
+    private static Map<String, Object> toResultHeader(Map<String, Object> messageHeader) {
         var resHeader = new HashMap<String, Object>();
         if (messageHeader.get(HEADER_MESSAGE_TYPE) != null) {
             resHeader.put(HEADER_MESSAGE_TYPE, messageHeader.get(HEADER_MESSAGE_TYPE));
@@ -137,7 +138,7 @@ public class GlobalNotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void testHeartbeat() {
+    void testHeartbeat() {
         var notificationWebSocketHandler = new GlobalNotificationWebSocketHandler(null, 1);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/global");
@@ -160,7 +161,7 @@ public class GlobalNotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void testDiscard() {
+    void testDiscard() {
         var notificationWebSocketHandler = new GlobalNotificationWebSocketHandler(objectMapper, Integer.MAX_VALUE);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/global");

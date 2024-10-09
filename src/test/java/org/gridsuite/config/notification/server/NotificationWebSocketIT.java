@@ -6,36 +6,31 @@
  */
 package org.gridsuite.config.notification.server;
 
-import java.net.URI;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.client.StandardWebSocketClient;
 import org.springframework.web.reactive.socket.client.WebSocketClient;
 
-import static org.junit.Assert.assertNotNull;
+import java.net.URI;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = { NotificationApplication.class })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {NotificationApplication.class})
 @DirtiesContext
-public class NotificationWebSocketIT {
+class NotificationWebSocketIT {
 
     @LocalServerPort
     private String port;
 
     @Test
-    public void echo() {
+    void echo() {
         WebSocketClient client = new StandardWebSocketClient();
         assertNotNull(client);
         HttpHeaders headers = new HttpHeaders();
@@ -44,7 +39,7 @@ public class NotificationWebSocketIT {
     }
 
     @Test
-    public void echo2() {
+    void echo2() {
         WebSocketClient client = new StandardWebSocketClient();
         assertNotNull(client);
         HttpHeaders headers = new HttpHeaders();

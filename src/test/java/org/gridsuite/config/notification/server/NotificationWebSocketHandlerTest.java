@@ -6,16 +6,10 @@
  */
 package org.gridsuite.config.notification.server;
 
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -33,23 +27,29 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-public class NotificationWebSocketHandlerTest {
+class NotificationWebSocketHandlerTest {
 
     private ObjectMapper objectMapper;
     private WebSocketSession ws;
     private HandshakeInfo handshakeinfo;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         objectMapper = new ObjectMapper();
         var dataBufferFactory = new DefaultDataBufferFactory();
 
@@ -144,7 +144,7 @@ public class NotificationWebSocketHandlerTest {
                     String appName = (String) headers.get(HEADER_APP_NAME);
                     return filterUserId.equals(userId) && (filterAppName == null || COMMON_APP_NAME.equals(appName) || filterAppName.equals(appName));
                 })
-                .map(this::toResultHeader)
+                .map(NotificationWebSocketHandlerTest::toResultHeader)
                 .collect(Collectors.toList());
 
         List<Map<String, Object>> actual = messages.stream()
@@ -159,7 +159,7 @@ public class NotificationWebSocketHandlerTest {
         assertEquals(expected, actual);
     }
 
-    private Map<String, Object> toResultHeader(Map<String, Object> messageHeader) {
+    private static Map<String, Object> toResultHeader(Map<String, Object> messageHeader) {
         var resHeader = new HashMap<String, Object>();
         if (messageHeader.get(HEADER_APP_NAME) != null) {
             resHeader.put(HEADER_APP_NAME, messageHeader.get(HEADER_APP_NAME));
@@ -171,7 +171,7 @@ public class NotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void testWithoutUserIdFilter() {
+    void testWithoutUserIdFilter() {
         try {
             withFilters(null, null);
         } catch (NotificationServerRuntimeException e) {
@@ -189,22 +189,22 @@ public class NotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void testUserIdFilter() {
+    void testUserIdFilter() {
         withFilters("userId", null);
     }
 
     @Test
-    public void testAppNameFilter() {
+    void testAppNameFilter() {
         withFilters("userId", "appName");
     }
 
     @Test
-    public void testEncodingCharacters() {
+    void testEncodingCharacters() {
         withFilters("foo bar/bar", "appName");
     }
 
     @Test
-    public void testHeartbeat() {
+    void testHeartbeat() {
         var notificationWebSocketHandler = new NotificationWebSocketHandler(null, 1);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/notify");
@@ -227,7 +227,7 @@ public class NotificationWebSocketHandlerTest {
     }
 
     @Test
-    public void testDiscard() {
+    void testDiscard() {
         var notificationWebSocketHandler = new NotificationWebSocketHandler(objectMapper, Integer.MAX_VALUE);
 
         UriComponentsBuilder uriComponentBuilder = UriComponentsBuilder.fromUriString("http://localhost:1234/notify");
