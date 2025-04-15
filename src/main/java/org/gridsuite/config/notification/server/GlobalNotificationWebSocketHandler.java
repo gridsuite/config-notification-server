@@ -48,7 +48,9 @@ public class GlobalNotificationWebSocketHandler implements WebSocketHandler {
     private static final String CATEGORY_BROKER_INPUT = GlobalNotificationWebSocketHandler.class.getName() + ".messages.input-broker";
     private static final String CATEGORY_WS_OUTPUT = GlobalNotificationWebSocketHandler.class.getName() + ".messages.output-websocket";
     public static final String HEADER_MESSAGE_TYPE = "messageType";
+    public static final String HEADER_ANNOUNCEMENT_ID = "announcementId";
     public static final String HEADER_DURATION = "duration";
+    public static final String HEADER_SEVERITY = "severity";
 
     private ObjectMapper jacksonObjectMapper;
 
@@ -81,12 +83,12 @@ public class GlobalNotificationWebSocketHandler implements WebSocketHandler {
         return flux.map(m -> {
             try {
                 Map<String, Object> headers = new HashMap<>();
-                if (m.getHeaders().get(HEADER_MESSAGE_TYPE) != null) {
-                    headers.put(HEADER_MESSAGE_TYPE, m.getHeaders().get(HEADER_MESSAGE_TYPE));
-                }
-                if (m.getHeaders().get(HEADER_DURATION) != null) {
-                    headers.put(HEADER_DURATION, m.getHeaders().get(HEADER_DURATION));
-                }
+
+                putHeaderIfExists(m, headers, HEADER_MESSAGE_TYPE);
+                putHeaderIfExists(m, headers, HEADER_DURATION);
+                putHeaderIfExists(m, headers, HEADER_SEVERITY);
+                putHeaderIfExists(m, headers, HEADER_ANNOUNCEMENT_ID);
+
                 return jacksonObjectMapper.writeValueAsString(Map.of("payload", m.getPayload(), "headers", headers));
             } catch (JsonProcessingException e) {
                 throw new UncheckedIOException(e);
@@ -112,5 +114,11 @@ public class GlobalNotificationWebSocketHandler implements WebSocketHandler {
                         notificationFlux(webSocketSession)
                                 .mergeWith(heartbeatFlux(webSocketSession)))
                 .and(webSocketSession.receive());
+    }
+
+    private void putHeaderIfExists(Message<String> message, Map<String, Object> headers, String headerName) {
+        if (message.getHeaders().get(headerName) != null) {
+            headers.put(headerName, message.getHeaders().get(headerName));
+        }
     }
 }

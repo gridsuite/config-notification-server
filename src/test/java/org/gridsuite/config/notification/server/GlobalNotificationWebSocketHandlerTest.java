@@ -31,10 +31,8 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.HEADER_DURATION;
-import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.HEADER_MESSAGE_TYPE;
+import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.*;
 import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_APP_NAME;
 import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_USER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -93,12 +91,13 @@ class GlobalNotificationWebSocketHandlerTest {
         var sink = atomicRef.get();
 
         notificationWebSocketHandler.handle(ws);
-
+        UUID announcementId = UUID.randomUUID();
         List<Map<String, Object>> refMessages = Arrays.asList(
 
                 Map.of(HEADER_MESSAGE_TYPE, "msgType"),
                 Map.of(HEADER_MESSAGE_TYPE, "msgType", HEADER_DURATION, "100"),
                 Map.of(HEADER_MESSAGE_TYPE, "foo bar/bar", HEADER_DURATION, "200"),     // test encoding message type
+                Map.of(HEADER_MESSAGE_TYPE, "foo bar/bar", HEADER_DURATION, "300", HEADER_SEVERITY, "WARN", HEADER_ANNOUNCEMENT_ID, announcementId.toString()),
                 Map.of(HEADER_DURATION, "200"),     //test without message type
                 Map.of("random", "thing")
         );
@@ -112,7 +111,7 @@ class GlobalNotificationWebSocketHandlerTest {
         sink.complete();
 
         List<Map<String, Object>> expected = refMessages.stream().map(GlobalNotificationWebSocketHandlerTest::toResultHeader)
-                .collect(Collectors.toList());
+                .toList();
 
         List<Map<String, Object>> actual = messages.stream()
                 .map(t -> {
@@ -121,7 +120,7 @@ class GlobalNotificationWebSocketHandlerTest {
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);
                     }
-                }).collect(Collectors.toList());
+                }).toList();
 
         assertEquals(expected, actual);
     }
@@ -133,6 +132,12 @@ class GlobalNotificationWebSocketHandlerTest {
         }
         if (messageHeader.get(HEADER_DURATION) != null) {
             resHeader.put(HEADER_DURATION, messageHeader.get(HEADER_DURATION));
+        }
+        if (messageHeader.get(HEADER_SEVERITY) != null) {
+            resHeader.put(HEADER_SEVERITY, messageHeader.get(HEADER_SEVERITY));
+        }
+        if (messageHeader.get(HEADER_ANNOUNCEMENT_ID) != null) {
+            resHeader.put(HEADER_ANNOUNCEMENT_ID, messageHeader.get(HEADER_ANNOUNCEMENT_ID));
         }
         return resHeader;
     }
