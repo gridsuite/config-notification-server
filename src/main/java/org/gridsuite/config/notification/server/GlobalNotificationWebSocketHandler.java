@@ -116,7 +116,7 @@ public class GlobalNotificationWebSocketHandler implements WebSocketHandler {
                 .and(webSocketSession.receive());
     }
 
-    private void putHeaderIfExists(Message<String> message, Map<String, Object> headers, String headerName) {
+    private static void putHeaderIfExists(Message<String> message, Map<String, Object> headers, String headerName) {
         if (message.getHeaders().get(headerName) != null) {
             headers.put(headerName, message.getHeaders().get(headerName));
         }
