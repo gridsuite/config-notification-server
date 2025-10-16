@@ -8,7 +8,6 @@ package org.gridsuite.config.notification.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,7 +103,6 @@ public class GlobalNotificationWebSocketHandler implements WebSocketHandler {
                 .pingMessage(dbf -> dbf.wrap((webSocketSession.getId() + "-" + n).getBytes(StandardCharsets.UTF_8))));
     }
 
-    @NotNull
     @Override
     public Mono<Void> handle(WebSocketSession webSocketSession) {
         URI uri = webSocketSession.getHandshakeInfo().getUri();
