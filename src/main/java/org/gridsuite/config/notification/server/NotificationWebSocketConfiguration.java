@@ -6,9 +6,6 @@
  */
 package org.gridsuite.config.notification.server;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +13,8 @@ import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -26,7 +25,8 @@ public class NotificationWebSocketConfiguration {
     private final WebSocketHandler webSocketHandler;
     private final WebSocketHandler globalWebSocketHandler;
 
-    public NotificationWebSocketConfiguration(@Qualifier("notificationWebSocketHandler") WebSocketHandler webSocketHandler, @Qualifier("globalNotificationWebSocketHandler") WebSocketHandler globalWebSocketHandler) {
+    public NotificationWebSocketConfiguration(@Qualifier("notificationWebSocketHandler") WebSocketHandler webSocketHandler, @Qualifier("globalNotificationWebSocketHandler") WebSocketHandler
+            globalWebSocketHandler) {
         this.webSocketHandler = webSocketHandler;
         this.globalWebSocketHandler = globalWebSocketHandler;
     }
