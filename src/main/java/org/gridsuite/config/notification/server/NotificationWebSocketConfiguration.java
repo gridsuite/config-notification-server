@@ -25,8 +25,9 @@ public class NotificationWebSocketConfiguration {
     private final WebSocketHandler webSocketHandler;
     private final WebSocketHandler globalWebSocketHandler;
 
-    public NotificationWebSocketConfiguration(@Qualifier("notificationWebSocketHandler") WebSocketHandler webSocketHandler, @Qualifier("globalNotificationWebSocketHandler") WebSocketHandler
-            globalWebSocketHandler) {
+    public NotificationWebSocketConfiguration(
+            @Qualifier("notificationWebSocketHandler") WebSocketHandler webSocketHandler,
+            @Qualifier("globalNotificationWebSocketHandler") WebSocketHandler globalWebSocketHandler) {
         this.webSocketHandler = webSocketHandler;
         this.globalWebSocketHandler = globalWebSocketHandler;
     }
