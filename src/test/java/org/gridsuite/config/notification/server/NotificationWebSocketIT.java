@@ -6,9 +6,11 @@
  */
 package org.gridsuite.config.notification.server;
 
+import com.powsybl.ws.commons.security.AllowAllAuthorizationTestConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -17,12 +19,14 @@ import org.springframework.web.reactive.socket.client.WebSocketClient;
 
 import java.net.URI;
 
+import static com.powsybl.ws.commons.security.AuthorizationSystemConstants.HEADER_USER_ID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {NotificationApplication.class})
+@Import(AllowAllAuthorizationTestConfiguration.class)
 @DirtiesContext
 class NotificationWebSocketIT {
 
@@ -34,7 +38,7 @@ class NotificationWebSocketIT {
         WebSocketClient client = new StandardWebSocketClient();
         assertNotNull(client);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("userId", "userId");
+        headers.add(HEADER_USER_ID, "userId");
         client.execute(getUrl("/notify"), headers, WebSocketSession::close).block();
     }
 
@@ -43,7 +47,7 @@ class NotificationWebSocketIT {
         WebSocketClient client = new StandardWebSocketClient();
         assertNotNull(client);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("userId", "userId");
+        headers.add(HEADER_USER_ID, "userId");
         client.execute(getUrl("/global"), headers, WebSocketSession::close).block();
     }
 
