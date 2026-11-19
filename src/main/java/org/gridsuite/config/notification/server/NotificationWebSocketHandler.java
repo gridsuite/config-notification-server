@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import static com.powsybl.ws.commons.security.AuthorizationSystemConstants.HEADER_USER_ID;
+
 /**
  * A WebSocketHandler that sends messages from a broker to websockets opened by clients, interleaving with pings to keep connections open.
  *
@@ -51,7 +54,6 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationWebSocketHandler.class);
     private static final String CATEGORY_BROKER_INPUT = NotificationWebSocketHandler.class.getName() + ".messages.input-broker";
     private static final String CATEGORY_WS_OUTPUT = NotificationWebSocketHandler.class.getName() + ".messages.output-websocket";
-    public static final String HEADER_USER_ID = "userId";
     public static final String HEADER_APP_NAME = "appName";
     public static final String QUERY_APP_NAME = "appName";
     public static final String HEADER_PARAMETER_NAME = "parameterName";
@@ -118,6 +120,7 @@ public class NotificationWebSocketHandler implements WebSocketHandler {
     }
 
     @Override
+    @PreAuthorize("true")
     public Mono<Void> handle(WebSocketSession webSocketSession) {
         URI uri = webSocketSession.getHandshakeInfo().getUri();
         HttpHeaders headers = webSocketSession.getHandshakeInfo().getHeaders();

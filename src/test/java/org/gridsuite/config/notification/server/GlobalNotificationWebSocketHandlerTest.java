@@ -32,9 +32,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static com.powsybl.ws.commons.security.AuthorizationSystemConstants.HEADER_USER_ID;
 import static org.gridsuite.config.notification.server.GlobalNotificationWebSocketHandler.*;
 import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_APP_NAME;
-import static org.gridsuite.config.notification.server.NotificationWebSocketHandler.HEADER_USER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
